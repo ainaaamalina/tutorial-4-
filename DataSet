@@ -1,0 +1,220 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+// --- Interface & Data Classes ---
+interface Measurable {
+    double getMeasure();
+    String getName();
+}
+
+class BankAccount implements Measurable {
+    private static int lastAssignedNumber = 1000;
+    private int accNumber;
+    private double balance;
+
+    public BankAccount() {
+        this(0);
+    }
+
+    public BankAccount(double balance) {
+        lastAssignedNumber++;
+        this.accNumber = lastAssignedNumber;
+        this.balance = balance;
+    }
+
+    public int getAccountNumber() {
+        return accNumber;
+    }
+
+    @Override
+    public double getMeasure() {
+        return balance;
+    }
+
+    @Override
+    public String getName() {
+        return "Bank Account #" + accNumber;
+    }
+}
+
+class Coin implements Measurable {
+    private double value;
+    private String name;
+
+    public Coin(double value, String name) {
+        this.value = value;
+        this.name = name;
+    }
+
+    @Override
+    public double getMeasure() {
+        return value;
+    }
+
+    @Override
+    public String getName() {
+        return name + " Coin";
+    }
+}
+
+class Student implements Measurable {
+    private String name;
+    private double height;
+
+    public Student(String name, double height) {
+        this.name = name;
+        this.height = height;
+    }
+
+    public double getHeight() {
+        return height;
+    }
+
+    @Override
+    public double getMeasure() {
+        return height;
+    }
+
+    @Override
+    public String getName() {
+        return "Student: " + name;
+    }
+}
+
+class DataSet {
+    private double sum;
+    private Measurable max;
+    private int count;
+
+    public DataSet() {
+        sum = 0;
+        count = 0;
+        max = null;
+    }
+
+    public void add(Measurable x) {
+        sum += x.getMeasure();
+        if (count == 0 || x.getMeasure() > max.getMeasure()) {
+            max = x;
+        }
+        count++;
+    }
+
+    public Measurable getMax() {
+        return max;
+    }
+
+    public double getAverage() {
+        return count == 0 ? 0 : sum / count;
+    }
+
+    public int getCount() {
+        return count;
+    }
+}
+
+// --- GUI Interface ---
+public class DataSetUI extends JFrame {
+    private DataSet dataSet = new DataSet();
+    private JTextArea outputArea;
+
+    public DataSetUI() {
+        setTitle("Q1: DataSet Manager");
+        setSize(550, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(4, 3, 5, 5));
+
+        // Bank Account Controls
+        JTextField bankBalField = new JTextField();
+        JButton addBankBtn = new JButton("Add BankAccount");
+        inputPanel.add(new JLabel("Balance:"));
+        inputPanel.add(bankBalField);
+        inputPanel.add(addBankBtn);
+
+        // Coin Controls
+        JTextField coinNameField = new JTextField();
+        JTextField coinValField = new JTextField();
+        JButton addCoinBtn = new JButton("Add Coin");
+        inputPanel.add(new JLabel("Coin Name & Value:"));
+        JPanel coinSubPanel = new JPanel(new GridLayout(1, 2));
+        coinSubPanel.add(coinNameField);
+        coinSubPanel.add(coinValField);
+        inputPanel.add(coinSubPanel);
+        inputPanel.add(addCoinBtn);
+
+        // Student Controls
+        JTextField studentNameField = new JTextField();
+        JTextField studentHeightField = new JTextField();
+        JButton addStudentBtn = new JButton("Add Student");
+        inputPanel.add(new JLabel("Student Name & Height:"));
+        JPanel studentSubPanel = new JPanel(new GridLayout(1, 2));
+        studentSubPanel.add(studentNameField);
+        studentSubPanel.add(studentHeightField);
+        inputPanel.add(studentSubPanel);
+        inputPanel.add(addStudentBtn);
+
+        outputArea = new JTextArea();
+        outputArea.setEditable(false);
+
+        add(inputPanel, BorderLayout.NORTH);
+        add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        // Actions
+        addBankBtn.addActionListener(e -> {
+            try {
+                double bal = Double.parseDouble(bankBalField.getText());
+                BankAccount ba = new BankAccount(bal);
+                dataSet.add(ba);
+                updateOutput("Added: " + ba.getName() + " with balance " + bal);
+            } catch (Exception ex) {
+                updateOutput("Error: Invalid balance input.");
+            }
+        });
+
+        addCoinBtn.addActionListener(e -> {
+            try {
+                String name = coinNameField.getText();
+                double val = Double.parseDouble(coinValField.getText());
+                Coin c = new Coin(val, name);
+                dataSet.add(c);
+                updateOutput("Added: " + c.getName() + " worth " + val);
+            } catch (Exception ex) {
+                updateOutput("Error: Invalid coin details.");
+            }
+        });
+
+        addStudentBtn.addActionListener(e -> {
+            try {
+                String name = studentNameField.getText();
+                double height = Double.parseDouble(studentHeightField.getText());
+                Student s = new Student(name, height);
+                dataSet.add(s);
+                updateOutput("Added: " + s.getName() + " with height " + height);
+            } catch (Exception ex) {
+                updateOutput("Error: Invalid student details.");
+            }
+        });
+    }
+
+    private void updateOutput(String message) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(message).append("\n");
+        sb.append("--------------------------------------\n");
+        sb.append("Total Items: ").append(dataSet.getCount()).append("\n");
+        sb.append("Average Value: ").append(String.format("%.2f", dataSet.getAverage())).append("\n");
+        if (dataSet.getMax() != null) {
+            sb.append("Maximum Item: ").append(dataSet.getMax().getName())
+              .append(" (").append(dataSet.getMax().getMeasure()).append(")\n");
+        }
+        sb.append("--------------------------------------\n");
+        outputArea.setText(sb.toString());
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new DataSetUI().setVisible(true));
+    }
+}
