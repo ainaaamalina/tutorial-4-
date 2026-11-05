@@ -2,8 +2,6 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 
-
-
 interface Edible {
     String howToEat();
 }
@@ -62,8 +60,6 @@ class Person {
     }
 }
 
-/* ============================== GUI ============================== */
-
 public class EdibleApp extends JFrame {
 
     // Food-themed colour palette
@@ -85,7 +81,6 @@ public class EdibleApp extends JFrame {
             this.edible = edible;
         }
 
-        @Override
         public String toString() {
             return label;
         }
@@ -115,7 +110,6 @@ public class EdibleApp extends JFrame {
         add(buildCenterPanel(), BorderLayout.CENTER);
         add(buildStatusBar(), BorderLayout.SOUTH);
 
-        // Start with the same items as the original program
         addToMenu("Chicken", new Animal("Chicken"), "Animal");
         addToMenu("Red Apple", new Apple("Red Apple"), "Apple");
         addToMenu("Navel Orange", new Orange("Navel Orange"), "Orange");
@@ -192,7 +186,6 @@ public class EdibleApp extends JFrame {
         center.setBackground(PANEL_BG);
         center.setBorder(new EmptyBorder(8, 4, 8, 8));
 
-        // Menu list
         menuModel = new DefaultListModel<>();
         menuList = new JList<>(menuModel);
         menuList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -204,7 +197,6 @@ public class EdibleApp extends JFrame {
         menuScroll.setBorder(new TitledBorder(new LineBorder(DEMO_COLOR, 2, true), "Menu (select a food)"));
         menuScroll.setPreferredSize(new Dimension(0, 140));
 
-        // Buttons
         JPanel buttons = new JPanel(new GridLayout(1, 3, 8, 0));
         buttons.setOpaque(false);
         JButton eatBtn = makeButton("Eat Selected", EAT_COLOR);
@@ -219,7 +211,6 @@ public class EdibleApp extends JFrame {
         buttons.add(eatBtn);
         buttons.add(demoBtn);
         buttons.add(clearBtn);
-
         
         logArea = new JTextArea();
         logArea.setEditable(false);
