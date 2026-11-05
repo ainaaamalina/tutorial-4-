@@ -1,47 +1,51 @@
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
+import java.awt.event.*;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 
 
 interface Measurable {
     double getMeasure();
     String getName();
-    String getType();
 }
 
 class BankAccount implements Measurable {
-    private static int lastAssignedNumber = 1000;
+
     private int accNumber;
     private double balance;
+    private static int LastAssignedNumber = 1000;
+
+    public BankAccount() {
+        LastAssignedNumber++;
+        accNumber = LastAssignedNumber;
+        balance = 0;
+    }
 
     public BankAccount(double balance) {
-        lastAssignedNumber++;
-        this.accNumber = lastAssignedNumber;
+        LastAssignedNumber++;
+        accNumber = LastAssignedNumber;
         this.balance = balance;
     }
 
-    public int getAccountNumber() {
+    public int getAcccountNumber() {
         return accNumber;
     }
 
- 
     public double getMeasure() {
         return balance;
     }
 
-  
     public String getName() {
-        return "Acc #" + accNumber;
-    }
-
-  
-    public String getType() {
-        return "Bank Account";
+        return "Account #" + accNumber;
     }
 }
 
 class Coin implements Measurable {
+
     private double value;
     private String name;
 
@@ -50,48 +54,21 @@ class Coin implements Measurable {
         this.name = name;
     }
 
-   
+    public double getValue() {
+        return value;
+    }
+
     public double getMeasure() {
         return value;
     }
 
-  
     public String getName() {
         return name;
-    }
-
-    
-    public String getType() {
-        return "Coin";
-    }
-}
-
-class Student implements Measurable {
-    private String name;
-    private double height;
-
-    public Student(String name, double height) {
-        this.name = name;
-        this.height = height;
-    }
-
-  
-    public double getMeasure() {
-        return height;
-    }
-
-   
-    public String getName() {
-        return name;
-    }
-
-
-    public String getType() {
-        return "Student";
     }
 }
 
 class DataSet {
+
     private double sum;
     private Measurable max;
     private int count;
@@ -104,9 +81,11 @@ class DataSet {
 
     public void add(Measurable x) {
         sum += x.getMeasure();
+
         if (count == 0 || x.getMeasure() > max.getMeasure()) {
             max = x;
         }
+
         count++;
     }
 
@@ -115,381 +94,352 @@ class DataSet {
     }
 
     public double getAverage() {
-        return count == 0 ? 0 : sum / count;
+        if (count == 0)
+            return 0;
+
+        return sum / count;
+    }
+}
+
+class Student implements Measurable {
+
+    private String name;
+    private double height;
+
+    public Student(String name, double height) {
+        this.name = name;
+        this.height = height;
     }
 
-    public double getSum() {
-        return sum;
+    public double getHeight() {
+        return height;
     }
 
-    public int getCount() {
-        return count;
+    public double getMeasure() {
+        return height;
     }
 
-    public void clear() {
-        sum = 0;
-        count = 0;
-        max = null;
+    public String getName() {
+        return name;
     }
 }
 
 
-public class DataSetUI extends JFrame {
-    private DataSet dataSet = new DataSet();
 
-   
-    private JLabel lblTotalCount;
-    private JLabel lblAverage;
-    private JLabel lblMaxVal;
-    private JLabel lblSum;
+public class DataSetGUI extends JFrame {
 
-  
-    private JTextArea logArea;
+    // Colour palette
+    private static final Color HEADER_BG   = new Color(63, 81, 181);
+    private static final Color INPUT_BG    = new Color(232, 234, 246);
+    private static final Color RESULT_BG   = new Color(255, 248, 225);
+    private static final Color ADD_COLOR   = new Color(76, 175, 80);
+    private static final Color CALC_COLOR  = new Color(33, 150, 243);
+    private static final Color CLEAR_COLOR = new Color(244, 67, 54);
 
-    
-    private static final Color BG_COLOR = new Color(245, 247, 250);
-    private static final Color CARD_BG = Color.WHITE;
-    private static final Color HEADER_BLUE = new Color(41, 128, 185);
-    private static final Color SOFT_BLUE = new Color(70, 130, 180); // Soft Blue Theme Color for Buttons
-    private static final Color ACCENT_GREEN = new Color(39, 174, 96);
-    private static final Color TEXT_DARK = new Color(44, 62, 80);
-    private static final Color BORDER_COLOR = new Color(220, 224, 230);
+    private static final String BANK = "Bank Account";
+    private static final String COIN = "Coin";
+    private static final String STUDENT = "Student";
 
-    public DataSetUI() {
-        setTitle("DataSet Analytics Dashboard");
-        setSize(950, 720);
-        setMinimumSize(new Dimension(850, 650));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    private final DecimalFormat df = new DecimalFormat("0.00");
+
+    // One DataSet (and item list) per category
+    private DataSet bankData = new DataSet();
+    private DataSet coinData = new DataSet();
+    private DataSet studentData = new DataSet();
+    private final List<String> bankItems = new ArrayList<>();
+    private final List<String> coinItems = new ArrayList<>();
+    private final List<String> studentItems = new ArrayList<>();
+
+    // Components
+    private JComboBox<String> typeCombo;
+    private JLabel nameLabel, valueLabel;
+    private JTextField nameField, valueField;
+    private JCheckBox twoDecimalsBox;
+    private JRadioButton showAllRadio, showCurrentRadio;
+    private JTextArea itemsArea, resultArea;
+    private JLabel statusLabel;
+
+    public DataSetGUI() {
+        setTitle("DataSet Analyzer");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(780, 560);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(BG_COLOR);
-        setLayout(new BorderLayout(15, 15));
+        setLayout(new BorderLayout(8, 8));
+        getContentPane().setBackground(Color.WHITE);
 
-    
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        add(buildHeader(), BorderLayout.NORTH);
+        add(buildInputPanel(), BorderLayout.WEST);
+        add(buildCenterPanel(), BorderLayout.CENTER);
+        add(buildStatusBar(), BorderLayout.SOUTH);
 
-       
-        JPanel mainContainer = new JPanel(new GridBagLayout());
-        mainContainer.setBackground(BG_COLOR);
-        mainContainer.setBorder(new EmptyBorder(0, 15, 15, 15));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weighty = 1.0;
-
-       
-        gbc.gridx = 0;
-        gbc.weightx = 0.40;
-        gbc.insets = new Insets(0, 0, 0, 10);
-        mainContainer.add(createInputFormsPanel(), gbc);
-
-        
-        gbc.gridx = 1;
-        gbc.weightx = 0.60;
-        gbc.insets = new Insets(0, 5, 0, 0);
-        mainContainer.add(createDashboardPanel(), gbc);
-
-        add(mainContainer, BorderLayout.CENTER);
+        updateFieldsForType();
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(HEADER_BLUE);
-        header.setBorder(new EmptyBorder(18, 20, 18, 20));
-
-        JLabel title = new JLabel("DataSet Analytics Engine");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+    private JPanel buildHeader() {
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+        header.setBackground(HEADER_BG);
+        JLabel title = new JLabel("DataSet Analyzer - Average & Maximum");
+        title.setFont(new Font("SansSerif", Font.BOLD, 22));
         title.setForeground(Color.WHITE);
-
-        JLabel subtitle = new JLabel("Polymorphic Data Aggregation & Real-Time Stats");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        subtitle.setForeground(new Color(214, 234, 248));
-
-        JPanel textHolder = new JPanel(new GridLayout(2, 1, 0, 2));
-        textHolder.setOpaque(false);
-        textHolder.add(title);
-        textHolder.add(subtitle);
-
-        header.add(textHolder, BorderLayout.WEST);
+        header.add(title);
         return header;
     }
 
-    private JPanel createInputFormsPanel() {
-        JPanel container = new JPanel();
-        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setOpaque(false);
+    private JPanel buildInputPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(INPUT_BG);
+        panel.setBorder(new CompoundBorder(
+                new EmptyBorder(8, 8, 8, 4),
+                new TitledBorder(new LineBorder(HEADER_BG, 2, true), "Add Item")));
+        panel.setPreferredSize(new Dimension(270, 0));
 
-        
-        JPanel bankCard = createSectionCard("Add Bank Account");
-        JTextField txtBalance = createStyledTextField("e.g. 2500.50");
-        StyledButton btnAddBank = new StyledButton("Add Account", SOFT_BLUE, Color.WHITE);
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(6, 10, 6, 10);
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.gridx = 0;
+        g.weightx = 1;
 
-        bankCard.add(createFieldRow("Balance ($):", txtBalance));
-        bankCard.add(Box.createVerticalStrut(10));
-        bankCard.add(btnAddBank);
+        // Type combo box
+        g.gridy = 0;
+        panel.add(new JLabel("Category:"), g);
+        typeCombo = new JComboBox<>(new String[]{BANK, COIN, STUDENT});
+        typeCombo.addActionListener(e -> updateFieldsForType());
+        g.gridy = 1;
+        panel.add(typeCombo, g);
 
-        btnAddBank.addActionListener(e -> {
-            try {
-                double val = Double.parseDouble(txtBalance.getText().trim());
-                BankAccount ba = new BankAccount(val);
-                dataSet.add(ba);
-                log(String.format("Added Bank Account: %s | Balance: $%.2f", ba.getName(), val));
-                txtBalance.setText("");
-                updateDashboard();
-            } catch (NumberFormatException ex) {
-                showError("Please enter a valid numeric balance.");
-            }
-        });
+        // Name field
+        nameLabel = new JLabel("Name:");
+        g.gridy = 2;
+        panel.add(nameLabel, g);
+        nameField = new JTextField();
+        g.gridy = 3;
+        panel.add(nameField, g);
 
-       
-        JPanel coinCard = createSectionCard("Add Coin");
-        JTextField txtCoinName = createStyledTextField("e.g. Quarter");
-        JTextField txtCoinValue = createStyledTextField("e.g. 0.25");
-        StyledButton btnAddCoin = new StyledButton("Add Coin", SOFT_BLUE, Color.WHITE);
+        // Value field
+        valueLabel = new JLabel("Value:");
+        g.gridy = 4;
+        panel.add(valueLabel, g);
+        valueField = new JTextField();
+        g.gridy = 5;
+        panel.add(valueField, g);
 
-        coinCard.add(createFieldRow("Coin Name:", txtCoinName));
-        coinCard.add(Box.createVerticalStrut(8));
-        coinCard.add(createFieldRow("Value ($):", txtCoinValue));
-        coinCard.add(Box.createVerticalStrut(10));
-        coinCard.add(btnAddCoin);
+        // Check box
+        twoDecimalsBox = new JCheckBox("Format results to 2 decimals", true);
+        twoDecimalsBox.setOpaque(false);
+        g.gridy = 6;
+        panel.add(twoDecimalsBox, g);
 
-        btnAddCoin.addActionListener(e -> {
-            try {
-                String name = txtCoinName.getText().trim();
-                double val = Double.parseDouble(txtCoinValue.getText().trim());
-                if (name.isEmpty()) throw new IllegalArgumentException("Name required");
-                Coin c = new Coin(val, name);
-                dataSet.add(c);
-                log(String.format("Added Coin: %s | Value: $%.2f", name, val));
-                txtCoinName.setText("");
-                txtCoinValue.setText("");
-                updateDashboard();
-            } catch (NumberFormatException ex) {
-                showError("Please enter a valid coin value.");
-            } catch (IllegalArgumentException ex) {
-                showError("Coin name cannot be empty.");
-            }
-        });
+        // Radio buttons
+        showCurrentRadio = new JRadioButton("Results: selected category", true);
+        showAllRadio = new JRadioButton("Results: all categories");
+        showCurrentRadio.setOpaque(false);
+        showAllRadio.setOpaque(false);
+        ButtonGroup group = new ButtonGroup();
+        group.add(showCurrentRadio);
+        group.add(showAllRadio);
+        g.gridy = 7;
+        panel.add(showCurrentRadio, g);
+        g.gridy = 8;
+        panel.add(showAllRadio, g);
 
-     
-        JPanel studentCard = createSectionCard("Add Student");
-        JTextField txtStudentName = createStyledTextField("e.g. Sarah");
-        JTextField txtStudentHeight = createStyledTextField("e.g. 172.5");
-        StyledButton btnAddStudent = new StyledButton("Add Student", SOFT_BLUE, Color.WHITE);
+        // Buttons
+        JPanel buttons = new JPanel(new GridLayout(1, 3, 6, 0));
+        buttons.setOpaque(false);
+        JButton addBtn = makeButton("Add", ADD_COLOR);
+        JButton calcBtn = makeButton("Calculate", CALC_COLOR);
+        JButton clearBtn = makeButton("Clear", CLEAR_COLOR);
+        addBtn.addActionListener(e -> addItem());
+        calcBtn.addActionListener(e -> calculate());
+        clearBtn.addActionListener(e -> clearAll());
+        buttons.add(addBtn);
+        buttons.add(calcBtn);
+        buttons.add(clearBtn);
+        g.gridy = 9;
+        g.insets = new Insets(14, 10, 6, 10);
+        panel.add(buttons, g);
 
-        studentCard.add(createFieldRow("Student Name:", txtStudentName));
-        studentCard.add(Box.createVerticalStrut(8));
-        studentCard.add(createFieldRow("Height (cm):", txtStudentHeight));
-        studentCard.add(Box.createVerticalStrut(10));
-        studentCard.add(btnAddStudent);
+        // Push everything up
+        g.gridy = 10;
+        g.weighty = 1;
+        panel.add(Box.createVerticalGlue(), g);
 
-        btnAddStudent.addActionListener(e -> {
-            try {
-                String name = txtStudentName.getText().trim();
-                double height = Double.parseDouble(txtStudentHeight.getText().trim());
-                if (name.isEmpty()) throw new IllegalArgumentException("Name required");
-                Student s = new Student(name, height);
-                dataSet.add(s);
-                log(String.format("Added Student: %s | Height: %.1f cm", name, height));
-                txtStudentName.setText("");
-                txtStudentHeight.setText("");
-                updateDashboard();
-            } catch (NumberFormatException ex) {
-                showError("Please enter a valid numeric height.");
-            } catch (IllegalArgumentException ex) {
-                showError("Student name cannot be empty.");
-            }
-        });
-
-        
-        StyledButton btnReset = new StyledButton("Reset All Data", SOFT_BLUE, Color.WHITE);
-        btnReset.addActionListener(e -> {
-            dataSet.clear();
-            logArea.setText("");
-            updateDashboard();
-            log("System reset complete. All entries cleared.");
-        });
-
-        container.add(bankCard);
-        container.add(Box.createVerticalStrut(10));
-        container.add(coinCard);
-        container.add(Box.createVerticalStrut(10));
-        container.add(studentCard);
-        container.add(Box.createVerticalStrut(15));
-        container.add(btnReset);
-
-        return container;
+        return panel;
     }
 
-    private JPanel createDashboardPanel() {
-        JPanel dashboard = new JPanel(new BorderLayout(0, 12));
-        dashboard.setOpaque(false);
+    private JPanel buildCenterPanel() {
+        JPanel center = new JPanel(new GridLayout(2, 1, 8, 8));
+        center.setBorder(new EmptyBorder(8, 4, 8, 8));
+        center.setBackground(Color.WHITE);
 
-   
-        JPanel statsGrid = new JPanel(new GridLayout(2, 2, 10, 10));
-        statsGrid.setOpaque(false);
+        itemsArea = new JTextArea();
+        itemsArea.setEditable(false);
+        itemsArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        itemsArea.setBackground(new Color(227, 242, 253));
+        JScrollPane itemsScroll = new JScrollPane(itemsArea);
+        itemsScroll.setBorder(new TitledBorder(new LineBorder(CALC_COLOR, 2, true), "Items Added"));
 
-        lblTotalCount = new JLabel("0", SwingConstants.CENTER);
-        lblSum = new JLabel("0.00", SwingConstants.CENTER);
-        lblAverage = new JLabel("0.00", SwingConstants.CENTER);
-        lblMaxVal = new JLabel("None", SwingConstants.CENTER);
+        resultArea = new JTextArea();
+        resultArea.setEditable(false);
+        resultArea.setFont(new Font("Monospaced", Font.BOLD, 13));
+        resultArea.setBackground(RESULT_BG);
+        JScrollPane resultScroll = new JScrollPane(resultArea);
+        resultScroll.setBorder(new TitledBorder(new LineBorder(new Color(255, 160, 0), 2, true), "Results"));
 
-        statsGrid.add(createMetricCard("TOTAL ITEMS", lblTotalCount, new Color(142, 68, 173)));
-        statsGrid.add(createMetricCard("TOTAL SUM", lblSum, ACCENT_GREEN));
-        statsGrid.add(createMetricCard("AVERAGE VALUE", lblAverage, HEADER_BLUE));
-        statsGrid.add(createMetricCard("MAX ITEM", lblMaxVal, new Color(211, 84, 0)));
-
-      
-        JPanel logCard = createSectionCard("Activity Log & Transactions");
-        logCard.setLayout(new BorderLayout(0, 8));
-
-        logArea = new JTextArea();
-        logArea.setEditable(false);
-        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        logArea.setBackground(new Color(250, 251, 253));
-        logArea.setForeground(TEXT_DARK);
-        logArea.setMargin(new Insets(8, 8, 8, 8));
-
-        JScrollPane scrollPane = new JScrollPane(logArea);
-        scrollPane.setBorder(new LineBorder(BORDER_COLOR, 1, true));
-
-        logCard.add(scrollPane, BorderLayout.CENTER);
-
-        dashboard.add(statsGrid, BorderLayout.NORTH);
-        dashboard.add(logCard, BorderLayout.CENTER);
-
-        return dashboard;
+        center.add(itemsScroll);
+        center.add(resultScroll);
+        return center;
     }
 
-  
-
-    private JPanel createMetricCard(String title, JLabel valueLabel, Color accentColor) {
-        JPanel card = new JPanel(new BorderLayout(0, 5));
-        card.setBackground(CARD_BG);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BORDER_COLOR, 1, true),
-                new EmptyBorder(12, 12, 12, 12)
-        ));
-
-        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 10));
-        titleLabel.setForeground(new Color(127, 140, 141));
-
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        valueLabel.setForeground(accentColor);
-
-        card.add(titleLabel, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
-        return card;
+    private JPanel buildStatusBar() {
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bar.setBackground(new Color(224, 224, 224));
+        statusLabel = new JLabel("Ready.");
+        bar.add(statusLabel);
+        return bar;
     }
 
-    private JPanel createSectionCard(String title) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(CARD_BG);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BORDER_COLOR, 1, true),
-                BorderFactory.createTitledBorder(
-                        BorderFactory.createEmptyBorder(5, 5, 5, 5),
-                        title,
-                        TitledBorder.LEFT,
-                        TitledBorder.TOP,
-                        new Font("Segoe UI", Font.BOLD, 13),
-                        TEXT_DARK
-                )
-        ));
-        return card;
+    private JButton makeButton(String text, Color color) {
+        JButton b = new JButton(text);
+        b.setBackground(color);
+        b.setForeground(Color.WHITE);
+        b.setFocusPainted(false);
+        b.setFont(new Font("SansSerif", Font.BOLD, 12));
+        b.setOpaque(true);
+        b.setBorderPainted(false);
+        return b;
     }
 
-    private JPanel createFieldRow(String labelText, JTextField field) {
-        JPanel row = new JPanel(new BorderLayout(8, 0));
-        row.setOpaque(false);
-        JLabel label = new JLabel(labelText);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        label.setPreferredSize(new Dimension(110, 25));
-        label.setForeground(TEXT_DARK);
-
-        row.add(label, BorderLayout.WEST);
-        row.add(field, BorderLayout.CENTER);
-        return row;
-    }
-
-    private JTextField createStyledTextField(String placeholder) {
-        JTextField tf = new JTextField();
-        tf.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        tf.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BORDER_COLOR, 1, true),
-                new EmptyBorder(4, 6, 4, 6)
-        ));
-        tf.setToolTipText(placeholder);
-        return tf;
-    }
-
-    
-    static class StyledButton extends JButton {
-        private Color normalBg;
-        private Color hoverBg;
-
-        public StyledButton(String text, Color bgColor, Color fgColor) {
-            super(text);
-            this.normalBg = bgColor;
-            this.hoverBg = bgColor.brighter();
-            setForeground(fgColor);
-            setFont(new Font("Segoe UI", Font.BOLD, 12));
-            setFocusPainted(false);
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setOpaque(false);
-            setCursor(new Cursor(Cursor.HAND_CURSOR));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        }
-
-        
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            if (getModel().isPressed()) {
-                g2.setColor(normalBg.darker());
-            } else if (getModel().isRollover()) {
-                g2.setColor(hoverBg);
-            } else {
-                g2.setColor(normalBg);
-            }
-
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-            g2.dispose();
-
-            super.paintComponent(g);
-        }
-    }
-
-    private void updateDashboard() {
-        lblTotalCount.setText(String.valueOf(dataSet.getCount()));
-        lblSum.setText(String.format("%.2f", dataSet.getSum()));
-        lblAverage.setText(String.format("%.2f", dataSet.getAverage()));
-
-        Measurable max = dataSet.getMax();
-        if (max != null) {
-            lblMaxVal.setText(String.format("%s (%.2f)", max.getName(), max.getMeasure()));
+    // Adjust labels/fields depending on selected category
+    private void updateFieldsForType() {
+        String type = (String) typeCombo.getSelectedItem();
+        nameField.setText("");
+        valueField.setText("");
+        if (BANK.equals(type)) {
+            nameLabel.setText("Name: (auto-assigned)");
+            nameField.setEnabled(false);
+            valueLabel.setText("Balance:");
+        } else if (COIN.equals(type)) {
+            nameLabel.setText("Coin name:");
+            nameField.setEnabled(true);
+            valueLabel.setText("Coin value:");
         } else {
-            lblMaxVal.setText("None");
+            nameLabel.setText("Student name:");
+            nameField.setEnabled(true);
+            valueLabel.setText("Height (cm):");
         }
     }
 
-    private void log(String message) {
-        logArea.append("> " + message + "\n");
-        logArea.setCaretPosition(logArea.getDocument().getLength());
+    private void addItem() {
+        String type = (String) typeCombo.getSelectedItem();
+        double value;
+        try {
+            value = Double.parseDouble(valueField.getText().trim());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid number for the value.",
+                    "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String name = nameField.getText().trim();
+
+        if (BANK.equals(type)) {
+            BankAccount acc = new BankAccount(value);
+            bankData.add(acc);
+            bankItems.add(acc.getName() + "  |  Balance: " + df.format(acc.getMeasure()));
+        } else if (COIN.equals(type)) {
+            if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a coin name.",
+                        "Missing Name", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Coin c = new Coin(value, name);
+            coinData.add(c);
+            coinItems.add(c.getName() + "  |  Value: " + df.format(c.getMeasure()));
+        } else {
+            if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a student name.",
+                        "Missing Name", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Student s = new Student(name, value);
+            studentData.add(s);
+            studentItems.add(s.getName() + "  |  Height: " + df.format(s.getMeasure()));
+        }
+
+        nameField.setText("");
+        valueField.setText("");
+        refreshItems();
+        statusLabel.setText("Added a " + type + " item.");
     }
 
-    private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, "Input Error", JOptionPane.ERROR_MESSAGE);
+    private void refreshItems() {
+        StringBuilder sb = new StringBuilder();
+        appendSection(sb, "BANK ACCOUNTS", bankItems);
+        appendSection(sb, "COINS", coinItems);
+        appendSection(sb, "STUDENTS", studentItems);
+        itemsArea.setText(sb.toString());
+    }
+
+    private void appendSection(StringBuilder sb, String title, List<String> items) {
+        sb.append("== ").append(title).append(" ==\n");
+        if (items.isEmpty()) {
+            sb.append("  (none)\n");
+        } else {
+            for (String s : items) sb.append("  ").append(s).append("\n");
+        }
+        sb.append("\n");
+    }
+
+    private void calculate() {
+        StringBuilder sb = new StringBuilder();
+        if (showAllRadio.isSelected()) {
+            describe(sb, BANK, bankData, "Balance");
+            describe(sb, COIN, coinData, "Value");
+            describe(sb, STUDENT, studentData, "Height");
+        } else {
+            String type = (String) typeCombo.getSelectedItem();
+            if (BANK.equals(type)) describe(sb, BANK, bankData, "Balance");
+            else if (COIN.equals(type)) describe(sb, COIN, coinData, "Value");
+            else describe(sb, STUDENT, studentData, "Height");
+        }
+        resultArea.setText(sb.toString());
+        statusLabel.setText("Calculation complete.");
+    }
+
+    private void describe(StringBuilder sb, String title, DataSet ds, String measureName) {
+        sb.append("== ").append(title.toUpperCase()).append(" ==\n");
+        Measurable max = ds.getMax();
+        if (max == null) {
+            sb.append("  No data yet.\n\n");
+            return;
+        }
+        sb.append("  Average ").append(measureName).append(": ").append(fmt(ds.getAverage())).append("\n");
+        sb.append("  Highest ").append(measureName).append(": ").append(fmt(max.getMeasure())).append("\n");
+        sb.append("  Highest Name: ").append(max.getName()).append("\n\n");
+    }
+
+    private String fmt(double v) {
+        return twoDecimalsBox.isSelected() ? df.format(v) : String.valueOf(v);
+    }
+
+    private void clearAll() {
+        int choice = JOptionPane.showConfirmDialog(this, "Clear all data?", "Confirm",
+                JOptionPane.YES_NO_OPTION);
+        if (choice != JOptionPane.YES_OPTION) return;
+        bankData = new DataSet();
+        coinData = new DataSet();
+        studentData = new DataSet();
+        bankItems.clear();
+        coinItems.clear();
+        studentItems.clear();
+        itemsArea.setText("");
+        resultArea.setText("");
+        nameField.setText("");
+        valueField.setText("");
+        statusLabel.setText("All data cleared.");
     }
 
     public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
-
-        SwingUtilities.invokeLater(() -> new DataSetUI().setVisible(true));
+        SwingUtilities.invokeLater(() -> new DataSetGUI().setVisible(true));
     }
 }
