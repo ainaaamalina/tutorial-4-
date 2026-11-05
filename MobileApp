@@ -4,8 +4,6 @@ import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-
-
 interface RadioTuner {
     void setStation(String station);
     void setFrequency(double frequency);
@@ -65,9 +63,7 @@ class BasicPhone extends MobileDevice {
 }
 
 
-
 public class MobileApp extends JFrame {
-
  
     private static final Color HEADER_BG   = new Color(13, 27, 62);     
     private static final Color PANEL_BG    = new Color(236, 239, 241);  
@@ -88,7 +84,7 @@ public class MobileApp extends JFrame {
             this.device = device;
         }
 
-        @Override
+
         public String toString() {
             return label;
         }
