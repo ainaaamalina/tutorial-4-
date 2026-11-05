@@ -1,1 +1,490 @@
+import javax.swing.*;
+import javax.swing.border.*;
+import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
+
+
+interface RadioTuner {
+    void setStation(String station);
+    void setFrequency(double frequency);
+}
+
+class MobileDevice implements RadioTuner {
+
+    protected String manufacturer;
+    protected String model;
+    protected String station;
+    protected double frequency;
+
+    public MobileDevice(String manufacturer, String model) {
+        this.manufacturer = manufacturer;
+        this.model = model;
+    }
+
+    public void setStation(String station) {
+        this.station = station;
+    }
+
+    public void setFrequency(double frequency) {
+        this.frequency = frequency;
+    }
+
+    public void printDetails() {
+        System.out.println("Manufacturer: " + manufacturer);
+        System.out.println("Model: " + model);
+    }
+}
+
+class SmartPhone extends MobileDevice {
+    private String type;
+
+    public SmartPhone(String manufacturer, String model, String type) {
+        super(manufacturer, model);
+        this.type = type;
+    }
+
+    public void printDetails() {
+        System.out.println("SmartPhone Detail:");
+        super.printDetails();
+        System.out.println("Type: " + type);
+    }
+}
+
+class BasicPhone extends MobileDevice {
+
+    public BasicPhone(String manufacturer, String model) {
+        super(manufacturer, model);
+    }
+
+    public void printDetails() {
+        System.out.println("\nBasic Phone Detail:");
+        super.printDetails();
+    }
+}
+
+
+
+public class MobileApp extends JFrame {
+
+ 
+    private static final Color HEADER_BG   = new Color(13, 27, 62);     
+    private static final Color PANEL_BG    = new Color(236, 239, 241);  
+    private static final Color CYAN        = new Color(0, 172, 193);
+    private static final Color PURPLE      = new Color(126, 87, 194);
+    private static final Color ORANGE      = new Color(255, 112, 67);
+    private static final Color GREEN       = new Color(46, 160, 90);
+    private static final Color GREY_BTN    = new Color(96, 125, 139);
+    private static final Color SCREEN_BG   = new Color(18, 32, 47);     
+    private static final Color SCREEN_FG   = new Color(128, 222, 234);
+
+    private static class DeviceItem {
+        final String label;
+        final MobileDevice device;
+
+        DeviceItem(String label, MobileDevice device) {
+            this.label = label;
+            this.device = device;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+   
+    private JComboBox<String> deviceTypeCombo;
+    private static final String[] MAKERS = {"Samsung", "Apple", "Nokia", "Sony Ericsson", "Huawei", "Xiaomi"};
+    private JRadioButton[] makerRadios;
+    private JRadioButton otherRadio;
+    private JTextField manufacturerField, modelField, typeField;
+    private JLabel typeLabel;
+    private DefaultListModel<DeviceItem> deviceModel;
+    private JList<DeviceItem> deviceList;
+    private JComboBox<String> stationCombo;
+    private JSpinner freqSpinner;
+    private JSlider freqSlider;
+    private JTextArea outputArea;
+    private JLabel statusLabel;
+    private boolean syncing = false;
+
+    public MobileApp() {
+        setTitle("Mobile Radio Manager");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(860, 600);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(8, 8));
+        getContentPane().setBackground(PANEL_BG);
+
+        add(buildHeader(), BorderLayout.NORTH);
+        add(buildCreatePanel(), BorderLayout.WEST);
+        add(buildCenterPanel(), BorderLayout.CENTER);
+        add(buildStatusBar(), BorderLayout.SOUTH);
+
+       
+        MobileDevice m1 = new SmartPhone("Samsung", "S20", "Galaxy");
+        MobileDevice m2 = new BasicPhone("Sonny Ericson", "Walkman");
+        m1.setStation("Hot FM");
+        m1.setFrequency(97.60);
+        m2.setStation("Fly FM");
+        m2.setFrequency(109.8);
+        deviceModel.addElement(new DeviceItem("SmartPhone - Samsung S20", m1));
+        deviceModel.addElement(new DeviceItem("BasicPhone - Sonny Ericson Walkman", m2));
+        deviceList.setSelectedIndex(0);
+
+        updateTypeFieldState();
+    }
+
+    private JPanel buildHeader() {
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 12));
+        header.setBackground(HEADER_BG);
+        JLabel title = new JLabel("Mobile Radio Manager");
+        title.setFont(new Font("SansSerif", Font.BOLD, 22));
+        title.setForeground(CYAN);
+        header.add(title);
+        return header;
+    }
+
+    private JPanel buildCreatePanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(PANEL_BG);
+        panel.setBorder(new CompoundBorder(
+                new EmptyBorder(8, 8, 8, 4),
+                new TitledBorder(new LineBorder(CYAN, 2, true), "Create Device")));
+        panel.setPreferredSize(new Dimension(300, 0));
+
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(6, 10, 6, 10);
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.gridx = 0;
+        g.weightx = 1;
+
+        g.gridy = 0;
+        panel.add(new JLabel("Device type:"), g);
+        deviceTypeCombo = new JComboBox<>(new String[]{"SmartPhone", "BasicPhone"});
+        deviceTypeCombo.addActionListener(e -> updateTypeFieldState());
+        g.gridy = 1;
+        panel.add(deviceTypeCombo, g);
+
+        g.gridy = 2;
+        panel.add(new JLabel("Manufacturer:"), g);
+
+        
+        JPanel makerPanel = new JPanel(new GridLayout(0, 2, 4, 2));
+        makerPanel.setOpaque(false);
+        ButtonGroup makerGroup = new ButtonGroup();
+        makerRadios = new JRadioButton[MAKERS.length];
+        for (int i = 0; i < MAKERS.length; i++) {
+            makerRadios[i] = new JRadioButton(MAKERS[i]);
+            makerRadios[i].setOpaque(false);
+            makerRadios[i].addActionListener(e -> updateOtherMakerState());
+            makerGroup.add(makerRadios[i]);
+            makerPanel.add(makerRadios[i]);
+        }
+        makerRadios[0].setSelected(true);
+        otherRadio = new JRadioButton("Other:");
+        otherRadio.setOpaque(false);
+        otherRadio.addActionListener(e -> updateOtherMakerState());
+        makerGroup.add(otherRadio);
+        makerPanel.add(otherRadio);
+        g.gridy = 3;
+        panel.add(makerPanel, g);
+
+        manufacturerField = new JTextField();
+        manufacturerField.setToolTipText("e.g. Oppo, Vivo, Motorola");
+        g.gridy = 4;
+        panel.add(manufacturerField, g);
+
+        g.gridy = 5;
+        panel.add(new JLabel("Model (e.g. S20, Walkman):"), g);
+        modelField = new JTextField();
+        g.gridy = 6;
+        panel.add(modelField, g);
+
+        typeLabel = new JLabel("Type (e.g. Galaxy):");
+        g.gridy = 7;
+        panel.add(typeLabel, g);
+        typeField = new JTextField();
+        g.gridy = 8;
+        panel.add(typeField, g);
+
+        JButton createBtn = makeButton("Create Device", GREEN);
+        createBtn.addActionListener(e -> onCreate());
+        g.gridy = 9;
+        g.insets = new Insets(14, 10, 6, 10);
+        panel.add(createBtn, g);
+
+        g.gridy = 10;
+        g.weighty = 1;
+        panel.add(Box.createVerticalGlue(), g);
+
+        updateOtherMakerState();
+
+        return panel;
+    }
+
+    private JPanel buildCenterPanel() {
+        JPanel center = new JPanel(new BorderLayout(8, 8));
+        center.setBackground(PANEL_BG);
+        center.setBorder(new EmptyBorder(8, 4, 8, 8));
+
+        
+        deviceModel = new DefaultListModel<>();
+        deviceList = new JList<>(deviceModel);
+        deviceList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        deviceList.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        deviceList.setSelectionBackground(PURPLE);
+        deviceList.setSelectionForeground(Color.WHITE);
+        JScrollPane listScroll = new JScrollPane(deviceList);
+        listScroll.setBorder(new TitledBorder(new LineBorder(PURPLE, 2, true), "Devices (select one)"));
+
+        
+        JPanel tuner = new JPanel(new GridBagLayout());
+        tuner.setBackground(PANEL_BG);
+        tuner.setBorder(new TitledBorder(new LineBorder(ORANGE, 2, true), "Radio Tuner"));
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(4, 8, 4, 8);
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.gridx = 0;
+        g.weightx = 1;
+
+        g.gridy = 0;
+        tuner.add(new JLabel("Station:"), g);
+        stationCombo = new JComboBox<>(new String[]{"Hot FM", "Fly FM", "Era FM", "Sinar FM", "Suria FM"});
+        stationCombo.setEditable(true);
+        g.gridy = 1;
+        tuner.add(stationCombo, g);
+
+        g.gridy = 2;
+        tuner.add(new JLabel("Frequency (MHz):"), g);
+        freqSpinner = new JSpinner(new SpinnerNumberModel(97.6, 80.0, 120.0, 0.1));
+        freqSpinner.setEditor(new JSpinner.NumberEditor(freqSpinner, "0.0"));
+        g.gridy = 3;
+        tuner.add(freqSpinner, g);
+
+        freqSlider = new JSlider(800, 1200, 976);
+        freqSlider.setBackground(PANEL_BG);
+        freqSlider.setMajorTickSpacing(100);
+        freqSlider.setPaintTicks(true);
+        g.gridy = 4;
+        tuner.add(freqSlider, g);
+
+       
+        freqSpinner.addChangeListener(e -> {
+            if (syncing) return;
+            syncing = true;
+            double v = ((Number) freqSpinner.getValue()).doubleValue();
+            freqSlider.setValue((int) Math.round(v * 10));
+            syncing = false;
+        });
+        freqSlider.addChangeListener(e -> {
+            if (syncing) return;
+            syncing = true;
+            freqSpinner.setValue(freqSlider.getValue() / 10.0);
+            syncing = false;
+        });
+
+        JButton tuneBtn = makeButton("Tune Selected Device", ORANGE);
+        tuneBtn.addActionListener(e -> onTune());
+        g.gridy = 5;
+        tuner.add(tuneBtn, g);
+
+        JPanel top = new JPanel(new GridLayout(1, 2, 8, 0));
+        top.setOpaque(false);
+        top.add(listScroll);
+        top.add(tuner);
+        top.setPreferredSize(new Dimension(0, 230));
+
+        
+        JPanel buttons = new JPanel(new GridLayout(1, 3, 8, 0));
+        buttons.setOpaque(false);
+        JButton detailsBtn = makeButton("Show Details", PURPLE);
+        JButton demoBtn = makeButton("Run Original Demo", CYAN);
+        JButton clearBtn = makeButton("Clear Output", GREY_BTN);
+        detailsBtn.addActionListener(e -> onShowDetails());
+        demoBtn.addActionListener(e -> onDemo());
+        clearBtn.addActionListener(e -> {
+            outputArea.setText("");
+            statusLabel.setText("Output cleared.");
+        });
+        buttons.add(detailsBtn);
+        buttons.add(demoBtn);
+        buttons.add(clearBtn);
+
+       
+        outputArea = new JTextArea();
+        outputArea.setEditable(false);
+        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        outputArea.setBackground(SCREEN_BG);
+        outputArea.setForeground(SCREEN_FG);
+        outputArea.setMargin(new Insets(6, 8, 6, 8));
+        JScrollPane outScroll = new JScrollPane(outputArea);
+        outScroll.setBorder(new TitledBorder(new LineBorder(HEADER_BG, 2, true), "Output Screen"));
+
+        JPanel middle = new JPanel(new BorderLayout(0, 8));
+        middle.setOpaque(false);
+        middle.add(buttons, BorderLayout.NORTH);
+        middle.add(outScroll, BorderLayout.CENTER);
+
+        center.add(top, BorderLayout.NORTH);
+        center.add(middle, BorderLayout.CENTER);
+        return center;
+    }
+
+    private JPanel buildStatusBar() {
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bar.setBackground(new Color(207, 216, 220));
+        statusLabel = new JLabel("Ready.");
+        bar.add(statusLabel);
+        return bar;
+    }
+
+    private JButton makeButton(String text, Color color) {
+        JButton b = new JButton(text);
+        b.setBackground(color);
+        b.setForeground(Color.WHITE);
+        b.setFocusPainted(false);
+        b.setFont(new Font("SansSerif", Font.BOLD, 12));
+        b.setOpaque(true);
+        b.setBorderPainted(false);
+        return b;
+    }
+
+    
+    private void updateTypeFieldState() {
+        boolean smart = "SmartPhone".equals(deviceTypeCombo.getSelectedItem());
+        typeField.setEnabled(smart);
+        typeLabel.setEnabled(smart);
+        if (!smart) typeField.setText("");
+    }
+
+   
+    private void updateOtherMakerState() {
+        boolean other = otherRadio.isSelected();
+        manufacturerField.setEnabled(other);
+        if (!other) manufacturerField.setText("");
+    }
+
+    private String getSelectedManufacturer() {
+        if (otherRadio.isSelected()) {
+            return manufacturerField.getText().trim();
+        }
+        for (JRadioButton r : makerRadios) {
+            if (r.isSelected()) return r.getText();
+        }
+        return "";
+    }
+
+    private void onCreate() {
+        String maker = getSelectedManufacturer();
+        String model = modelField.getText().trim();
+        if (maker.isEmpty() || model.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please choose a manufacturer and enter the model.",
+                    "Missing Information", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String kind = (String) deviceTypeCombo.getSelectedItem();
+        MobileDevice device;
+        if ("SmartPhone".equals(kind)) {
+            String type = typeField.getText().trim();
+            if (type.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter the smartphone type.",
+                        "Missing Type", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            device = new SmartPhone(maker, model, type);
+        } else {
+            device = new BasicPhone(maker, model);
+        }
+
+        DeviceItem item = new DeviceItem(kind + " - " + maker + " " + model, device);
+        deviceModel.addElement(item);
+        deviceList.setSelectedValue(item, true);
+        manufacturerField.setText("");
+        modelField.setText("");
+        typeField.setText("");
+        makerRadios[0].setSelected(true);
+        updateOtherMakerState();
+        statusLabel.setText("Created " + item.label + ".");
+    }
+
+    private void onTune() {
+        DeviceItem item = deviceList.getSelectedValue();
+        if (item == null) {
+            JOptionPane.showMessageDialog(this, "Please select a device first.",
+                    "No Selection", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        Object st = stationCombo.getSelectedItem();
+        String station = st == null ? "" : st.toString().trim();
+        if (station.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a station name.",
+                    "Missing Station", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        double freq = Math.round(((Number) freqSpinner.getValue()).doubleValue() * 10) / 10.0;
+
+        item.device.setStation(station);
+        item.device.setFrequency(freq);
+        statusLabel.setText(item.label + " tuned to " + station + " (" + freq + " MHz).");
+    }
+
+    private void onShowDetails() {
+        DeviceItem item = deviceList.getSelectedValue();
+        if (item == null) {
+            JOptionPane.showMessageDialog(this, "Please select a device first.",
+                    "No Selection", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        MobileDevice d = item.device;
+       
+        String details = capture(d::printDetails);
+        outputArea.append(details);
+        outputArea.append("Station: " + (d.station == null ? "(not set)" : d.station) + "\n");
+        outputArea.append("Frequency: " + d.frequency + "\n\n");
+        statusLabel.setText("Showing details for " + item.label + ".");
+    }
+
+    
+    private void onDemo() {
+        String result = capture(() -> {
+            MobileDevice m1 = new SmartPhone("Samsung", "S20", "Galaxy");
+            MobileDevice m2 = new BasicPhone("Sonny Ericson", "Walkman");
+
+            m1.setStation("Hot FM");
+            m1.setFrequency(97.60);
+
+            m2.setStation("Fly FM");
+            m2.setFrequency(109.8);
+
+            m1.printDetails();
+            System.out.println("Station:" + m1.station);
+            System.out.println("Frqueency:" + m1.frequency);
+
+            m2.printDetails();
+            System.out.println("Station:" + m2.station);
+            System.out.println("Frequency:" + m2.frequency);
+        });
+        outputArea.append(result + "\n");
+        statusLabel.setText("Original demo executed.");
+    }
+
+    private String capture(Runnable r) {
+        PrintStream old = System.out;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(bos, true));
+        try {
+            r.run();
+        } finally {
+            System.setOut(old);
+        }
+        return bos.toString();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new MobileApp().setVisible(true));
+    }
+}
